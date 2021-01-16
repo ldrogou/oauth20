@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS auth
 `
 
 func (store *dbStore) Open() error {
-	db, err := sqlx.Connect("sqlite3", "auth.go")
+	db, err := sqlx.Connect("sqlite3", "auth.db")
 	if err != nil {
 		return err
 	}
