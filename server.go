@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -36,6 +38,31 @@ func (s *server) response(rw http.ResponseWriter, _ *http.Request, data interfac
 	err := json.NewEncoder(rw).Encode(data)
 	if err != nil {
 		log.Printf("Cannot encode to json (err=%v)\n", err)
+	}
+
+}
+
+func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data interface{}, status int) {
+	rw.Header().Set("Content-Type", "text/html")
+	rw.WriteHeader(status)
+
+	tokenVal := data.(interface{}).(map[string]interface{})
+
+	//t := template.New("mon template")
+	tem, err := template.ParseFiles("template/resultat.html")
+	if err != nil {
+		fmt.Errorf("erreur suivante %v", err)
+	}
+
+	sssss := tokenVal["access_token"].(string)
+	//sssss := "erer"
+	log.Println(sssss)
+
+	f := File{jwtProduce: sssss}
+
+	err = tem.Execute(rw, f)
+	if err != nil {
+		fmt.Errorf("erreur suivante %v", err)
 	}
 
 }

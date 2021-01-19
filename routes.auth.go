@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -16,8 +18,7 @@ import (
 
 //File structure du fichier
 type File struct {
-	Name  string
-	Other string
+	jwtProduce string
 }
 
 type JsonToken struct {
@@ -55,28 +56,20 @@ func (s *server) handleIndex() http.HandlerFunc {
 			fmt.Errorf("erreur suivante %v", err)
 		}
 
-		f := File{Name: "Drogou", Other: "Dans le fichier"}
-
-		err = t.Execute(rw, f)
+		err = t.Execute(rw, nil)
 		if err != nil {
 			fmt.Errorf("erreur suivante %v", err)
 		}
 	}
 
 }
-func (s *server) handleTest() http.HandlerFunc {
+func (s *server) handleLocal() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		fmt.Println("sub")
-
 		sub := r.FormValue("sub")
-		fmt.Printf("sub %v", sub)
 		idEntreprise := r.FormValue("id_entreprise")
-		fmt.Printf("idEntreprise %v", idEntreprise)
 		rcaPartnerID := r.FormValue("rcaPartnerId")
-		fmt.Printf("rcaPartnerID %v", rcaPartnerID)
 		var jwtKey = []byte(r.FormValue("secret"))
-		fmt.Printf("secret %v", jwtKey)
 
 		// Declare the expiration time of the token
 		// here, we have kept it as 5 minutes
@@ -96,26 +89,60 @@ func (s *server) handleTest() http.HandlerFunc {
 				ExpiresAt: expirationTime.Unix(),
 			},
 		}
-		fmt.Printf("claims %v", claims)
 
 		// Declare the token with the algorithm used for signing, and the claims
 		tokenstr := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		fmt.Printf("token %v", tokenstr)
+		zer, _ := json.Marshal(tokenstr.Claims)
+		fmt.Printf("zer %v", string(zer))
 
 		// Create the JWT string
 		tokenString, err := tokenstr.SignedString(jwtKey)
-		fmt.Printf("tokenString %v", tokenString)
 		if err != nil {
 			log.Printf("erreur %v", err)
 			// If there is an error in creating the JWT return an internal server error
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		log.Printf("le token %v \n", tokenString)
+		tableau := strings.Split(tokenString, ".")
+		log.Println(tableau[0])
+		headerrr, _ := base64.URLEncoding.DecodeString(tableau[0])
+		log.Println(string(string(headerrr)))
 
-		s.response(rw, r, tokenString, http.StatusOK)
+		log.Println(tableau[1])
+		claimssss, _ := base64.URLEncoding.DecodeString(tableau[1])
+		log.Println(string(string(claimssss)))
+
+		log.Println(tableau[2])
+		test, _ := base64.URLEncoding.DecodeString(tableau[2])
+		log.Println(string(string(test)))
+
+		s.response(rw, r, string(zer), http.StatusOK)
 	}
 
 }
+
+func (s *server) handleOAuth20() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+
+		domain := r.FormValue("domain")
+		clientID := r.FormValue("clientId")
+		scopes := r.FormValue("scopes")
+		currentCompany := r.FormValue("currentCompany")
+		if len(currentCompany) == 0 {
+			currentCompany = "false"
+		} else {
+			currentCompany = "true"
+		}
+
+		log.Println(currentCompany)
+		redirecthttp := "https://" + domain + "/entreprise-partenaire/authorize?client_id=" + clientID + "&scope=" + scopes + "&current_company=" + currentCompany + "&redirect_uri=http://localhost:8080/oauth/redirect"
+		http.Redirect(rw, r, redirecthttp, http.StatusMovedPermanently)
+
+	}
+
+}
+
 func (s *server) handleRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
@@ -154,15 +181,13 @@ func (s *server) handleRedirect() http.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
-		tokenVal := t.(interface{}).(map[string]interface{})
-
 		if err != nil {
 			log.Printf("Cannot parse token body err=%v", err)
 			s.response(rw, r, nil, http.StatusBadGateway)
 			return
 		}
 
-		s.response(rw, r, tokenVal["access_token"], http.StatusOK)
+		s.responseFile(rw, r, t, http.StatusOK)
 
 	}
 }
