@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 //File structure du fichier
@@ -32,6 +35,16 @@ type token struct {
 	refreshToken string `json:"refresh_token"`
 }
 
+// Create a struct that will be encoded to a JWT.
+// We add jwt.StandardClaims as an embedded type, to provide fields like expiry time
+type Claims struct {
+	Sub          string   `json:"sub"`
+	IDEntreprise string   `json:"idEntreprise"`
+	RcaPartnerID string   `json:"rcaPartnerId"`
+	Roles        []string `json:"roles"`
+	jwt.StandardClaims
+}
+
 func (s *server) handleIndex() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "text/html")
@@ -51,14 +64,65 @@ func (s *server) handleIndex() http.HandlerFunc {
 	}
 
 }
+func (s *server) handleTest() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
 
+		fmt.Println("sub")
+
+		sub := r.FormValue("sub")
+		fmt.Printf("sub %v", sub)
+		idEntreprise := r.FormValue("id_entreprise")
+		fmt.Printf("idEntreprise %v", idEntreprise)
+		rcaPartnerID := r.FormValue("rcaPartnerId")
+		fmt.Printf("rcaPartnerID %v", rcaPartnerID)
+		var jwtKey = []byte(r.FormValue("secret"))
+		fmt.Printf("secret %v", jwtKey)
+
+		// Declare the expiration time of the token
+		// here, we have kept it as 5 minutes
+		expirationTime := time.Now().Add(5 * time.Hour)
+		roles := []string{"RCA_CLOUD_EXPERT_COMPTABLE",
+			"E_COLLECTE_BO_CREA",
+			"E_CREATION_CREA",
+			"E_QUESTIONNAIRE_CREA"}
+		// Create the JWT claims, which includes the username and expiry time
+		claims := &Claims{
+			Sub:          sub,
+			IDEntreprise: idEntreprise,
+			RcaPartnerID: rcaPartnerID,
+			Roles:        roles,
+			StandardClaims: jwt.StandardClaims{
+				// In JWT, the expiry time is expressed as unix milliseconds
+				ExpiresAt: expirationTime.Unix(),
+			},
+		}
+		fmt.Printf("claims %v", claims)
+
+		// Declare the token with the algorithm used for signing, and the claims
+		tokenstr := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		fmt.Printf("token %v", tokenstr)
+
+		// Create the JWT string
+		tokenString, err := tokenstr.SignedString(jwtKey)
+		fmt.Printf("tokenString %v", tokenString)
+		if err != nil {
+			log.Printf("erreur %v", err)
+			// If there is an error in creating the JWT return an internal server error
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		s.response(rw, r, tokenString, http.StatusOK)
+	}
+
+}
 func (s *server) handleRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		codes, _ := r.URL.Query()["code"]
 		jsonStr := constJsonToken(codes[0])
 
-		apiURL := "https://api.XXX.XXX.XXX/auth/v1/oauth2.0/accessToken"
+		apiURL := "https://api.captation.beta.rca.fr/auth/v1/oauth2.0/accessToken"
 		data := url.Values{}
 		data.Set("client_id", jsonStr.clientID)
 		data.Set("client_secret", jsonStr.clientSecret)
@@ -90,7 +154,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
-		fmt.Println(t.(interface{}).(map[string]interface{})["access_token"])
+		tokenVal := t.(interface{}).(map[string]interface{})
 
 		if err != nil {
 			log.Printf("Cannot parse token body err=%v", err)
@@ -98,7 +162,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			return
 		}
 
-		s.response(rw, r, t, http.StatusOK)
+		s.response(rw, r, tokenVal["access_token"], http.StatusOK)
 
 	}
 }
