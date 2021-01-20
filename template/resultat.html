@@ -11,7 +11,12 @@
 
     <script src="http://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha512.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
+    <script>
 
+        var payloadJson = `{{.Payload}}`
+        console.log(JSON.stringify(payloadJson))
+        
+    </script>
 </head>
 
 <body>
@@ -19,13 +24,21 @@
         <h1 class="center-align">Composition</h1>
     </div>
     <div class="container">
-
-        {{.jwtProduce }}
-        
         <div class="row">
-            <div class="input-field col s12">
-                <i class="material-icons prefix">account_circle</i>
-                <label for="name">{{.jwtProduce }}</label>
+            <div class="col s5">
+                <span style="width:300px; word-wrap:break-word; display:inline-block;"> 
+                {{.JwtProduce }}
+                </span>
+            </div>
+            <div class="col s7">
+                header
+                <div>{{.Header}}</div>
+                Payload
+                <div>
+                    <span style="width:300px; word-wrap:break-word; display:inline-block;"> 
+                    {{.Payload}}
+                    </span>
+                </div>
             </div>
         </div>
     </div>

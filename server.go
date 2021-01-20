@@ -55,10 +55,16 @@ func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data inte
 	}
 
 	sssss := tokenVal["access_token"].(string)
+	header := tokenVal["header"].(string)
+	payload := tokenVal["payload"].(string)
 	//sssss := "erer"
 	log.Println(sssss)
 
-	f := File{jwtProduce: sssss}
+	f := File{
+		JwtProduce: sssss,
+		Header:     header,
+		Payload:    payload,
+	}
 
 	err = tem.Execute(rw, f)
 	if err != nil {

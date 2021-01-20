@@ -18,7 +18,9 @@ import (
 
 //File structure du fichier
 type File struct {
-	jwtProduce string
+	JwtProduce string
+	Header     string
+	Payload    string
 }
 
 type JsonToken struct {
@@ -92,8 +94,6 @@ func (s *server) handleLocal() http.HandlerFunc {
 
 		// Declare the token with the algorithm used for signing, and the claims
 		tokenstr := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		zer, _ := json.Marshal(tokenstr.Claims)
-		fmt.Printf("zer %v", string(zer))
 
 		// Create the JWT string
 		tokenString, err := tokenstr.SignedString(jwtKey)
@@ -103,21 +103,25 @@ func (s *server) handleLocal() http.HandlerFunc {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		log.Printf("le token %v \n", tokenString)
 		tableau := strings.Split(tokenString, ".")
-		log.Println(tableau[0])
-		headerrr, _ := base64.URLEncoding.DecodeString(tableau[0])
-		log.Println(string(string(headerrr)))
+		header, _ := base64.URLEncoding.DecodeString(tableau[0])
+		log.Println(string(string(header)))
 
 		log.Println(tableau[1])
-		claimssss, _ := base64.URLEncoding.DecodeString(tableau[1])
-		log.Println(string(string(claimssss)))
+		payload, _ := base64.URLEncoding.DecodeString(tableau[1])
+		log.Println(string(payload))
 
 		log.Println(tableau[2])
 		test, _ := base64.URLEncoding.DecodeString(tableau[2])
 		log.Println(string(string(test)))
 
-		s.response(rw, r, string(zer), http.StatusOK)
+		tokenSssss := map[string]interface{}{
+			"access_token": tokenString,
+			"header":       string(header),
+			"payload":      string(payload),
+		}
+
+		s.responseFile(rw, r, tokenSssss, http.StatusOK)
 	}
 
 }
@@ -136,7 +140,7 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 		}
 
 		log.Println(currentCompany)
-		redirecthttp := "https://" + domain + "/entreprise-partenaire/authorize?client_id=" + clientID + "&scope=" + scopes + "&current_company=" + currentCompany + "&redirect_uri=http://localhost:8080/oauth/redirect"
+		redirecthttp := "https://" + domain + "/entreprise-partenaire/authorize?client_id=" + clientID + "&scope=" + scopes + "&current_company=" + currentCompany + "&redirect_uri=http://localhost:8080/oauth/redirect&abort_uri=http://localhost:8080/index"
 		http.Redirect(rw, r, redirecthttp, http.StatusMovedPermanently)
 
 	}
