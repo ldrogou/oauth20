@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -10,18 +9,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	templateoauth "github.com/ldrogou/goauth20/templateOAuth"
 )
-
-//File structure du fichier
-type File struct {
-	JwtProduce string
-	Header     string
-	Payload    string
-}
 
 type JsonToken struct {
 	clientID     string `json:"client_id"`
@@ -53,7 +45,7 @@ func (s *server) handleIndex() http.HandlerFunc {
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
 
-		t, err := template.ParseFiles("template/jwt.html")
+		t, err := template.New("test").Parse(templateoauth.TemplateIndex)
 		if err != nil {
 			fmt.Errorf("erreur suivante %v", err)
 		}
@@ -103,25 +95,8 @@ func (s *server) handleLocal() http.HandlerFunc {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		tableau := strings.Split(tokenString, ".")
-		header, _ := base64.URLEncoding.DecodeString(tableau[0])
-		log.Println(string(string(header)))
 
-		log.Println(tableau[1])
-		payload, _ := base64.URLEncoding.DecodeString(tableau[1])
-		log.Println(string(payload))
-
-		log.Println(tableau[2])
-		test, _ := base64.URLEncoding.DecodeString(tableau[2])
-		log.Println(string(string(test)))
-
-		tokenSssss := map[string]interface{}{
-			"access_token": tokenString,
-			"header":       string(header),
-			"payload":      string(payload),
-		}
-
-		s.responseFile(rw, r, tokenSssss, http.StatusOK)
+		s.responseFile(rw, r, tokenString, http.StatusOK)
 	}
 
 }
@@ -174,7 +149,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 
 		fmt.Println("response Status:", resp.Status)
 		fmt.Println("response Headers:", resp.Header)
-		var t interface{}
+		var t map[string]interface{}
 		// here's the trick
 		json.NewDecoder(resp.Body).Decode(&t)
 
@@ -191,7 +166,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			return
 		}
 
-		s.responseFile(rw, r, t, http.StatusOK)
+		s.responseFile(rw, r, t["access_token"], http.StatusOK)
 
 	}
 }

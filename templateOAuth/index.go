@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+package templateoauth
+
+//TemplateIndex index html
+var TemplateIndex = `<!DOCTYPE html>
 <html>
 
 <head>
@@ -99,7 +102,7 @@
                     <div class="input-field col s12">
                         <i class="material-icons prefix">account_balance</i>
                         <input type="text" id="rcaPartnerId" name="rcaPartnerId" value="agora-expert">
-                        <label for="name">ID partenaire RCA :</label>
+                        <label for="name" >ID partenaire RCA :</label>
                     </div>
                 </div>
                 <div class="row">
@@ -163,4 +166,4 @@
 
 </body>
 
-</html>
+</html>`

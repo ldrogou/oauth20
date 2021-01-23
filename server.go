@@ -6,13 +6,24 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	templateoauth "github.com/ldrogou/goauth20/templateOAuth"
 )
 
 type server struct {
 	router *mux.Router
 	store  Store
+}
+
+//File structure du fichier
+type File struct {
+	JwtProduce string
+	Header     string
+	Payload    string
+	Sign       string
 }
 
 func newServer() *server {
@@ -42,35 +53,41 @@ func (s *server) response(rw http.ResponseWriter, _ *http.Request, data interfac
 
 }
 
-func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data interface{}, status int) {
+func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data interface{}, status int) error {
 	rw.Header().Set("Content-Type", "text/html")
 	rw.WriteHeader(status)
 
-	tokenVal := data.(interface{}).(map[string]interface{})
+	tokenVal := data.(string)
 
-	//t := template.New("mon template")
-	tem, err := template.ParseFiles("template/resultat.html")
+	tableau := strings.Split(tokenVal, ".")
+	header, err := jwt.DecodeSegment(tableau[0])
 	if err != nil {
-		fmt.Errorf("erreur suivante %v", err)
+		return fmt.Errorf("Impossible de décoder le header. (err=%v)", err)
+	}
+	payload, err := jwt.DecodeSegment(tableau[1])
+	if err != nil {
+		return fmt.Errorf("Impossible de décoder le payload. (err=%v)", err)
 	}
 
-	sssss := tokenVal["access_token"].(string)
-	header := tokenVal["header"].(string)
-	payload := tokenVal["payload"].(string)
-	//sssss := "erer"
-	log.Println(sssss)
+	//t := template.New("mon template")
+	tem, err := template.New("Resulta").Parse(templateoauth.Resultat)
+	if err != nil {
+		return fmt.Errorf("erreur suivante %v", err)
+	}
 
 	f := File{
-		JwtProduce: sssss,
-		Header:     header,
-		Payload:    payload,
+		JwtProduce: tokenVal,
+		Header:     string(header),
+		Payload:    string(payload),
+		Sign:       tableau[2],
 	}
 
 	err = tem.Execute(rw, f)
 	if err != nil {
-		fmt.Errorf("erreur suivante %v", err)
+		return fmt.Errorf("erreur suivante %v", err)
 	}
 
+	return nil
 }
 
 func (s *server) decode(rw http.ResponseWriter, r *http.Request, v interface{}) error {
