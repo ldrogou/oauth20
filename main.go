@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/ldrogou/goauth20/store"
 )
 
 func main() {
@@ -18,7 +20,8 @@ func main() {
 
 func run() error {
 	srv := newServer()
-	srv.store = &dbStore{}
+	srv.store = &store.DbStore{}
+
 	err := srv.store.Open()
 	if err != nil {
 		return err

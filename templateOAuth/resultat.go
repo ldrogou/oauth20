@@ -33,15 +33,15 @@ var Resultat = `<!DOCTYPE html>
 
                 <ul class="collapsible collapsible-accordion">
                     <li>
-                        <div class="collapsible-header"><i class="material-icons">filter_drama</i>header</div>
+                        <div class="collapsible-header"><i class="material-icons">account_box</i>header</div>
                         <div class="collapsible-body" ><pre id="header"></pre></div>
                     </li>
                     <li class="active">
-                        <div class="collapsible-header"><i class="material-icons">place</i>payload</div>
+                        <div class="collapsible-header"><i class="material-icons">code</i>payload</div>
                         <div class="collapsible-body"><pre id="payload"></pre></div>
                     </li>
                     <li>
-                        <div class="collapsible-header"><i class="material-icons">whatshot</i>signature</div>
+                        <div class="collapsible-header"><i class="material-icons">border_color</i>signature</div>
                         <div class="collapsible-body"><span>{{.Sign}}</span></div>
                     </li>
                 </ul>

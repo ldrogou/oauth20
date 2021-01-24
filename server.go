@@ -10,12 +10,14 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	"github.com/ldrogou/goauth20/model"
+	"github.com/ldrogou/goauth20/store"
 	templateoauth "github.com/ldrogou/goauth20/templateOAuth"
 )
 
 type server struct {
 	router *mux.Router
-	store  Store
+	store  store.Store
 }
 
 //File structure du fichier
@@ -70,7 +72,7 @@ func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data inte
 	}
 
 	//t := template.New("mon template")
-	tem, err := template.New("Resulta").Parse(templateoauth.Resultat)
+	t, err := template.New("Resulta").Parse(templateoauth.Resultat)
 	if err != nil {
 		return fmt.Errorf("erreur suivante %v", err)
 	}
@@ -82,7 +84,19 @@ func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data inte
 		Sign:       tableau[2],
 	}
 
-	err = tem.Execute(rw, f)
+	o := &model.Oauth{
+		ID:           0,
+		AccessToken:  tokenVal,
+		ExpireIN:     180,
+		RefreshToken: "eeeee",
+	}
+	err = s.store.CreateOauth(o)
+	if err != nil {
+		fmt.Printf("erreur suivante %v", err)
+	}
+
+	log.Println("ezdzedezd")
+	err = t.Execute(rw, f)
 	if err != nil {
 		return fmt.Errorf("erreur suivante %v", err)
 	}

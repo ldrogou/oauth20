@@ -104,19 +104,22 @@ func (s *server) handleLocal() http.HandlerFunc {
 func (s *server) handleOAuth20() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		domain := r.FormValue("domain")
-		clientID := r.FormValue("clientId")
-		scopes := r.FormValue("scopes")
-		currentCompany := r.FormValue("currentCompany")
-		if len(currentCompany) == 0 {
-			currentCompany = "false"
+		d := r.FormValue("domain")
+		ci := r.FormValue("clientId")
+		s := r.FormValue("scopes")
+		cc := r.FormValue("currentCompany")
+		if len(cc) == 0 {
+			cc = "false"
 		} else {
-			currentCompany = "true"
+			cc = "true"
 		}
 
-		log.Println(currentCompany)
-		redirecthttp := "https://" + domain + "/entreprise-partenaire/authorize?client_id=" + clientID + "&scope=" + scopes + "&current_company=" + currentCompany + "&redirect_uri=http://localhost:8080/oauth/redirect&abort_uri=http://localhost:8080/index"
-		http.Redirect(rw, r, redirecthttp, http.StatusMovedPermanently)
+		rhttp := "https://" + d + "/entreprise-partenaire/authorize?client_id=" + ci +
+			"&scope=" + s +
+			"&current_company=" + cc +
+			"&redirect_uri=http://localhost:8080/oauth/redirect" +
+			"&abort_uri=http://localhost:8080/index"
+		http.Redirect(rw, r, rhttp, http.StatusMovedPermanently)
 
 	}
 
@@ -147,8 +150,6 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			panic(err)
 		}
 
-		fmt.Println("response Status:", resp.Status)
-		fmt.Println("response Headers:", resp.Header)
 		var t map[string]interface{}
 		// here's the trick
 		json.NewDecoder(resp.Body).Decode(&t)
