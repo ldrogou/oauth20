@@ -72,7 +72,7 @@ func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data inte
 	}
 
 	//t := template.New("mon template")
-	t, err := template.New("Resulta").Parse(templateoauth.Resultat)
+	t, err := template.New("Resultat").Parse(templateoauth.Resultat)
 	if err != nil {
 		return fmt.Errorf("erreur suivante %v", err)
 	}
@@ -95,7 +95,6 @@ func (s *server) responseFile(rw http.ResponseWriter, _ *http.Request, data inte
 		fmt.Printf("erreur suivante %v", err)
 	}
 
-	log.Println("ezdzedezd")
 	err = t.Execute(rw, f)
 	if err != nil {
 		return fmt.Errorf("erreur suivante %v", err)
