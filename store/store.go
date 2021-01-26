@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS oauth
 (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	access_token TEXT,
+	token_type TEXT,
 	expire_in INTEGER,
 	refresh_token TEXT
 )
@@ -86,7 +87,7 @@ func (store *DbStore) CreateOauth(o *model.Oauth) error {
 }
 
 func (store *DbStore) DeleteOauth() error {
-	_, err := store.db.Exec("DELETE TABLE oauth", nil)
+	_, err := store.db.Exec("DELETE FROM oauth", nil)
 	if err != nil {
 		return err
 	}
@@ -116,7 +117,7 @@ func (store *DbStore) CreateParam(p *model.Param) error {
 }
 
 func (store *DbStore) DeleteParam() error {
-	_, err := store.db.Exec("DELETE TABLE param", nil)
+	_, err := store.db.Exec("DELETE FROM param", nil)
 	if err != nil {
 		return err
 	}

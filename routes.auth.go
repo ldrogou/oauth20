@@ -9,29 +9,32 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/ldrogou/goauth20/model"
 	templateoauth "github.com/ldrogou/goauth20/templateOAuth"
 )
 
-type JsonToken struct {
-	clientID     string `json:"client_id"`
-	clientSecret string `json:"client_secret"`
-	grantType    string `json:"grant_type"`
-	redirectURI  string `json:"redirect_uri"`
-	code         string `json:"code"`
+//JSONToken json token
+type JSONToken struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	GrantType    string `json:"grant_type"`
+	RedirectURI  string `json:"redirect_uri"`
+	Code         string `json:"code"`
 }
 
-type token struct {
-	accessToken  string `json:"access_token"`
-	tokenType    string `json:"token_type"`
-	expiresIn    int    `json:"expires_in"`
-	refreshToken string `json:"refresh_token"`
+//Token token
+type Token struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
 }
 
-// Create a struct that will be encoded to a JWT.
-// We add jwt.StandardClaims as an embedded type, to provide fields like expiry time
+//Claim claims to export
 type Claims struct {
 	Sub          string   `json:"sub"`
 	IDEntreprise string   `json:"idEntreprise"`
@@ -42,17 +45,28 @@ type Claims struct {
 
 func (s *server) handleIndex() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+
+		err := s.store.DeleteOauth()
+		if err != nil {
+			fmt.Printf("erreur à la récupération des paramètres %v", err)
+		}
+
+		err = s.store.DeleteParam()
+		if err != nil {
+			fmt.Printf("erreur à la récupération des paramètres %v", err)
+		}
+
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
 
 		t, err := template.New("test").Parse(templateoauth.TemplateIndex)
 		if err != nil {
-			fmt.Errorf("erreur suivante %v", err)
+			fmt.Printf("erreur suivante %v", err)
 		}
 
 		err = t.Execute(rw, nil)
 		if err != nil {
-			fmt.Errorf("erreur suivante %v", err)
+			fmt.Printf("erreur suivante %v", err)
 		}
 	}
 
@@ -85,10 +99,10 @@ func (s *server) handleLocal() http.HandlerFunc {
 		}
 
 		// Declare the token with the algorithm used for signing, and the claims
-		tokenstr := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		ts := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 		// Create the JWT string
-		tokenString, err := tokenstr.SignedString(jwtKey)
+		at, err := ts.SignedString(jwtKey)
 		if err != nil {
 			log.Printf("erreur %v", err)
 			// If there is an error in creating the JWT return an internal server error
@@ -96,7 +110,22 @@ func (s *server) handleLocal() http.HandlerFunc {
 			return
 		}
 
-		s.responseFile(rw, r, tokenString, http.StatusOK)
+		// Puis redisrect vers page resultat
+		o := &model.Oauth{
+			ID:           0,
+			AccessToken:  at,
+			TokenType:    "bearer",
+			ExpireIN:     -1,
+			RefreshToken: "",
+		}
+		err = s.store.CreateOauth(o)
+		if err != nil {
+			fmt.Printf("erreur suivante %v", err)
+		}
+
+		rj := "http://localhost:8080/jwt"
+		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
+
 	}
 
 }
@@ -106,7 +135,8 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 
 		d := r.FormValue("domain")
 		ci := r.FormValue("clientId")
-		s := r.FormValue("scopes")
+		cs := r.FormValue("clientSecret")
+		sc := r.FormValue("scopes")
 		cc := r.FormValue("currentCompany")
 		if len(cc) == 0 {
 			cc = "false"
@@ -114,8 +144,22 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 			cc = "true"
 		}
 
+		// Insert en base de données
+		p := &model.Param{
+			ID:           0,
+			Domaine:      d,
+			ClientID:     ci,
+			ClientSecret: cs,
+			GrantType:    "authorization_code",
+		}
+
+		err := s.store.CreateParam(p)
+		if err != nil {
+			fmt.Printf("erreur suivante %v", err)
+		}
+
 		rhttp := "https://" + d + "/entreprise-partenaire/authorize?client_id=" + ci +
-			"&scope=" + s +
+			"&scope=" + sc +
 			"&current_company=" + cc +
 			"&redirect_uri=http://localhost:8080/oauth/redirect" +
 			"&abort_uri=http://localhost:8080/index"
@@ -129,15 +173,19 @@ func (s *server) handleRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		codes, _ := r.URL.Query()["code"]
-		jsonStr := constJsonToken(codes[0])
+		p, err := s.store.GetParam()
+		if err != nil {
+			fmt.Printf("erreur à la recupération des param (err=%v)", err)
+		}
+		jsonStr := constJSONToken(codes[0], p)
 
-		apiURL := "https://api.captation.beta.rca.fr/auth/v1/oauth2.0/accessToken"
+		apiURL := "https://api." + p.Domaine + "/auth/v1/oauth2.0/accessToken"
 		data := url.Values{}
-		data.Set("client_id", jsonStr.clientID)
-		data.Set("client_secret", jsonStr.clientSecret)
-		data.Set("grant_type", jsonStr.grantType)
-		data.Set("redirect_uri", jsonStr.redirectURI)
-		data.Set("code", jsonStr.code)
+		data.Set("client_id", jsonStr.ClientID)
+		data.Set("client_secret", jsonStr.ClientSecret)
+		data.Set("grant_type", jsonStr.GrantType)
+		data.Set("redirect_uri", jsonStr.RedirectURI)
+		data.Set("code", jsonStr.Code)
 
 		client := &http.Client{}
 		req, err := http.NewRequest("POST", apiURL, bytes.NewBufferString(data.Encode()))
@@ -167,17 +215,78 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			return
 		}
 
-		s.responseFile(rw, r, t["access_token"], http.StatusOK)
+		// Insert en base de données
+		o := &model.Oauth{
+			ID:           0,
+			AccessToken:  t["access_token"].(string),
+			TokenType:    t["type_token"].(string),
+			ExpireIN:     t["expire_in"].(int),
+			RefreshToken: t["refresh-token"].(string),
+		}
+		err = s.store.CreateOauth(o)
+		if err != nil {
+			fmt.Printf("erreur suivante %v", err)
+		}
 
+		// Puis redisrect vers page resultat
+		rj := "http://localhost:8080/jwt"
+		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 	}
 }
 
-func constJsonToken(code string) JsonToken {
-	return JsonToken{
-		clientID:     "meg-test-interne",
-		clientSecret: "YNVZF88dD4vny59k",
-		grantType:    "authorization_code",
-		redirectURI:  "http://localhost:8080/callback",
-		code:         code,
+func (s *server) handleJSONWebToken() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
+		rw.WriteHeader(http.StatusOK)
+
+		t, err := template.New("test").Parse(templateoauth.TemplateIndex)
+		if err != nil {
+			fmt.Printf("erreur suivante %v", err)
+		}
+
+		oauth, _ := s.store.GetOauth()
+		tokenVal := oauth.AccessToken
+
+		fmt.Println("============")
+		fmt.Println(tokenVal)
+		fmt.Println("============")
+
+		tableau := strings.Split(tokenVal, ".")
+		header, err := jwt.DecodeSegment(tableau[0])
+		if err != nil {
+			fmt.Printf("Impossible de décoder le header. (err=%v)", err)
+		}
+		payload, err := jwt.DecodeSegment(tableau[1])
+		if err != nil {
+			fmt.Printf("Impossible de décoder le payload. (err=%v)", err)
+		}
+
+		//t := template.New("mon template")
+		t, err = template.New("Resultat").Parse(templateoauth.Resultat)
+		if err != nil {
+			fmt.Printf("erreur suivante %v", err)
+		}
+
+		f := File{
+			JwtProduce: tokenVal,
+			Header:     string(header),
+			Payload:    string(payload),
+			Sign:       tableau[2],
+		}
+
+		err = t.Execute(rw, f)
+		if err != nil {
+			fmt.Printf("erreur suivante %v", err)
+		}
+	}
+}
+
+func constJSONToken(code string, param *model.Param) JSONToken {
+	return JSONToken{
+		ClientID:     param.ClientID,
+		ClientSecret: param.ClientSecret,
+		GrantType:    param.GrantType,
+		RedirectURI:  "http://localhost:8080/oauth/redirect",
+		Code:         code,
 	}
 }
