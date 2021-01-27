@@ -12,13 +12,13 @@ type Store interface {
 	Open() error
 	Close() error
 
-	GetOauth() (*model.Oauth, error)
+	GetOauth(id int64) (*model.Oauth, error)
 	CreateOauth(m *model.Oauth) error
-	DeleteOauth() error
+	DeleteOauth(id int64) error
 
-	GetParam() (*model.Param, error)
+	GetParam(state string) (*model.Param, error)
 	CreateParam(m *model.Param) error
-	DeleteParam() error
+	DeleteParam(state string) error
 }
 
 type DbStore struct {
@@ -64,9 +64,9 @@ func (store *DbStore) Close() error {
 	return store.db.Close()
 }
 
-func (store *DbStore) GetOauth() (*model.Oauth, error) {
+func (store *DbStore) GetOauth(id int64) (*model.Oauth, error) {
 	var oauth = &model.Oauth{}
-	err := store.db.Get(oauth, "SELECT * FROM oauth")
+	err := store.db.Get(oauth, "SELECT * FROM oauth where id=$1", id)
 	if err != nil {
 		return oauth, err
 	}
@@ -86,8 +86,8 @@ func (store *DbStore) CreateOauth(o *model.Oauth) error {
 
 }
 
-func (store *DbStore) DeleteOauth() error {
-	_, err := store.db.Exec("DELETE FROM oauth", nil)
+func (store *DbStore) DeleteOauth(id int64) error {
+	_, err := store.db.Exec("DELETE FROM oauth where id=?", id)
 	if err != nil {
 		return err
 	}
@@ -95,9 +95,9 @@ func (store *DbStore) DeleteOauth() error {
 	return err
 
 }
-func (store *DbStore) GetParam() (*model.Param, error) {
+func (store *DbStore) GetParam(state string) (*model.Param, error) {
 	var param = &model.Param{}
-	err := store.db.Get(param, "SELECT * FROM param")
+	err := store.db.Get(param, "SELECT * FROM param where state=$1", state)
 	if err != nil {
 		return param, err
 	}
@@ -116,8 +116,8 @@ func (store *DbStore) CreateParam(p *model.Param) error {
 
 }
 
-func (store *DbStore) DeleteParam() error {
-	_, err := store.db.Exec("DELETE FROM param", nil)
+func (store *DbStore) DeleteParam(state string) error {
+	_, err := store.db.Exec("DELETE FROM param where state=?", state)
 	if err != nil {
 		return err
 	}

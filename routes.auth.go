@@ -46,12 +46,12 @@ type Claims struct {
 func (s *server) handleIndex() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		err := s.store.DeleteOauth()
+		err := s.store.DeleteOauth(1)
 		if err != nil {
 			fmt.Printf("erreur à la récupération des paramètres %v", err)
 		}
 
-		err = s.store.DeleteParam()
+		err = s.store.DeleteParam("state")
 		if err != nil {
 			fmt.Printf("erreur à la récupération des paramètres %v", err)
 		}
@@ -161,7 +161,7 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 		rhttp := "https://" + d + "/entreprise-partenaire/authorize?client_id=" + ci +
 			"&scope=" + sc +
 			"&current_company=" + cc +
-			"&redirect_uri=http://localhost:8080/oauth/redirect" +
+			"&redirect_uri=http://localhost:8080/oauth/redirect%3Fstate=ererer" +
 			"&abort_uri=http://localhost:8080/index"
 		http.Redirect(rw, r, rhttp, http.StatusMovedPermanently)
 
@@ -172,12 +172,15 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 func (s *server) handleRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		codes, _ := r.URL.Query()["code"]
-		p, err := s.store.GetParam()
+		c := r.URL.Query().Get("code")
+		st := r.URL.Query().Get("state")
+
+		// ici jouter la récupération du param
+		p, err := s.store.GetParam(st)
 		if err != nil {
 			fmt.Printf("erreur à la recupération des param (err=%v)", err)
 		}
-		jsonStr := constJSONToken(codes[0], p)
+		jsonStr := constJSONToken(c, st, p)
 
 		apiURL := "https://api." + p.Domaine + "/auth/v1/oauth2.0/accessToken"
 		data := url.Values{}
@@ -228,8 +231,9 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
+		monID := strconv.Itoa(int(o.ID))
 		// Puis redisrect vers page resultat
-		rj := "http://localhost:8080/jwt"
+		rj := "http://localhost:8080/jwt?model=" + monID
 		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 	}
 }
@@ -244,7 +248,7 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
-		oauth, _ := s.store.GetOauth()
+		oauth, _ := s.store.GetOauth(1)
 		tokenVal := oauth.AccessToken
 
 		fmt.Println("============")
@@ -281,12 +285,12 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 	}
 }
 
-func constJSONToken(code string, param *model.Param) JSONToken {
+func constJSONToken(code, state string, param *model.Param) JSONToken {
 	return JSONToken{
 		ClientID:     param.ClientID,
 		ClientSecret: param.ClientSecret,
 		GrantType:    param.GrantType,
-		RedirectURI:  "http://localhost:8080/oauth/redirect",
+		RedirectURI:  "http://localhost:8080/oauth/redirect?state=" + state,
 		Code:         code,
 	}
 }
