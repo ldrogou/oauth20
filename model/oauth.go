@@ -7,7 +7,7 @@ type Oauth struct {
 	AccessToken  string `db:"access_token"`
 	TokenType    string `db:"token_type"`
 	ExpireIN     int    `db:"expire_in"`
-	RefreshToken string `db:"refreh_token"`
+	RefreshToken string `db:"refresh_token"`
 }
 
 func (o Oauth) String() string {

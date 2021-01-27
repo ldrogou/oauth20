@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -45,16 +46,6 @@ type Claims struct {
 
 func (s *server) handleIndex() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
-		err := s.store.DeleteOauth(1)
-		if err != nil {
-			fmt.Printf("erreur à la récupération des paramètres %v", err)
-		}
-
-		err = s.store.DeleteParam("state")
-		if err != nil {
-			fmt.Printf("erreur à la récupération des paramètres %v", err)
-		}
 
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
@@ -116,14 +107,16 @@ func (s *server) handleLocal() http.HandlerFunc {
 			AccessToken:  at,
 			TokenType:    "bearer",
 			ExpireIN:     -1,
-			RefreshToken: "",
+			RefreshToken: "refresh",
 		}
 		err = s.store.CreateOauth(o)
 		if err != nil {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
-		rj := "http://localhost:8080/jwt"
+		monID := strconv.Itoa(int(o.ID))
+		// Puis redisrect vers page resultat
+		rj := "http://localhost:8080/jwt?model=" + monID
 		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 
 	}
@@ -144,9 +137,15 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 			cc = "true"
 		}
 
+		// Création du nombre aléatoire pour la state
+		nr := rand.NewSource(time.Now().UnixNano())
+		rand := rand.New(nr)
+		st := strconv.Itoa(rand.Intn(10000000000))
+
 		// Insert en base de données
 		p := &model.Param{
 			ID:           0,
+			State:        st,
 			Domaine:      d,
 			ClientID:     ci,
 			ClientSecret: cs,
@@ -158,10 +157,13 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
+		// on appelle les méthodes de l'instance de `rand.Rand` obtenue comme les autres méthodes du package.
+		//fmt.Print(r1.Intn(100), ",")
+
 		rhttp := "https://" + d + "/entreprise-partenaire/authorize?client_id=" + ci +
 			"&scope=" + sc +
 			"&current_company=" + cc +
-			"&redirect_uri=http://localhost:8080/oauth/redirect%3Fstate=ererer" +
+			"&redirect_uri=http://localhost:8080/oauth/redirect%3Fstate=" + st +
 			"&abort_uri=http://localhost:8080/index"
 		http.Redirect(rw, r, rhttp, http.StatusMovedPermanently)
 
@@ -181,9 +183,10 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			fmt.Printf("erreur à la recupération des param (err=%v)", err)
 		}
 		jsonStr := constJSONToken(c, st, p)
-
+		log.Printf("jsonStr %v", jsonStr)
 		apiURL := "https://api." + p.Domaine + "/auth/v1/oauth2.0/accessToken"
 		data := url.Values{}
+		log.Printf("data %v", data)
 		data.Set("client_id", jsonStr.ClientID)
 		data.Set("client_secret", jsonStr.ClientSecret)
 		data.Set("grant_type", jsonStr.GrantType)
@@ -192,15 +195,19 @@ func (s *server) handleRedirect() http.HandlerFunc {
 
 		client := &http.Client{}
 		req, err := http.NewRequest("POST", apiURL, bytes.NewBufferString(data.Encode()))
+		if err != nil {
+			log.Printf("erreur sur le post (err=%v)", err)
+		}
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 		req.Header.Add("Accept", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			panic(err)
+			log.Printf("client erreur %v", err)
 		}
 
+		log.Printf("resp status %v", resp.StatusCode)
 		var t map[string]interface{}
 		// here's the trick
 		json.NewDecoder(resp.Body).Decode(&t)
@@ -224,7 +231,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			AccessToken:  t["access_token"].(string),
 			TokenType:    t["type_token"].(string),
 			ExpireIN:     t["expire_in"].(int),
-			RefreshToken: t["refresh-token"].(string),
+			RefreshToken: t["refresh_token"].(string),
 		}
 		err = s.store.CreateOauth(o)
 		if err != nil {
@@ -240,6 +247,9 @@ func (s *server) handleRedirect() http.HandlerFunc {
 
 func (s *server) handleJSONWebToken() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+
+		c := r.URL.Query().Get("model")
+
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
 
@@ -248,7 +258,12 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
-		oauth, _ := s.store.GetOauth(1)
+		oauthID, err := strconv.ParseInt(c, 10, 64)
+
+		oauth, err := s.store.GetOauth(oauthID)
+		if err != nil {
+			log.Printf("erreur a la récupération oauth (err=%v)", err)
+		}
 		tokenVal := oauth.AccessToken
 
 		fmt.Println("============")
@@ -290,7 +305,7 @@ func constJSONToken(code, state string, param *model.Param) JSONToken {
 		ClientID:     param.ClientID,
 		ClientSecret: param.ClientSecret,
 		GrantType:    param.GrantType,
-		RedirectURI:  "http://localhost:8080/oauth/redirect?state=" + state,
+		RedirectURI:  "http://localhost:8080/oauth/redirect%3Fstate=" + state,
 		Code:         code,
 	}
 }

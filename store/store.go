@@ -40,6 +40,7 @@ var schemaParam = `
 CREATE TABLE IF NOT EXISTS param
 (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	state TEXT,
 	domaine TEXT,
 	client_id TEXT,
 	client_secret TEXT,
@@ -66,16 +67,18 @@ func (store *DbStore) Close() error {
 
 func (store *DbStore) GetOauth(id int64) (*model.Oauth, error) {
 	var oauth = &model.Oauth{}
+	log.Println("ME VOICI")
 	err := store.db.Get(oauth, "SELECT * FROM oauth where id=$1", id)
 	if err != nil {
 		return oauth, err
 	}
+	log.Printf("oauth=%v", oauth)
 	return oauth, nil
 }
 
 func (store *DbStore) CreateOauth(o *model.Oauth) error {
-	res, err := store.db.Exec("INSERT INTO oauth (access_token, expire_in, refresh_token) VALUES (?, ?, ?)",
-		o.AccessToken, o.ExpireIN, o.RefreshToken)
+	res, err := store.db.Exec("INSERT INTO oauth (access_token, token_type, expire_in, refresh_token) VALUES (?, ?, ?, ?)",
+		o.AccessToken, o.TokenType, o.ExpireIN, o.RefreshToken)
 
 	if err != nil {
 		return err
@@ -105,8 +108,8 @@ func (store *DbStore) GetParam(state string) (*model.Param, error) {
 }
 
 func (store *DbStore) CreateParam(p *model.Param) error {
-	res, err := store.db.Exec("INSERT INTO param (domaine, client_id, client_secret, grant_type) VALUES (?, ?, ?, ?)",
-		p.Domaine, p.ClientID, p.ClientSecret, p.GrantType)
+	res, err := store.db.Exec("INSERT INTO param (state, domaine, client_id, client_secret, grant_type) VALUES (?, ?, ?, ?, ?)",
+		p.State, p.Domaine, p.ClientID, p.ClientSecret, p.GrantType)
 	if err != nil {
 		return err
 	}
