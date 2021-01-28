@@ -106,7 +106,7 @@ func (s *server) handleLocal() http.HandlerFunc {
 			ID:           0,
 			AccessToken:  at,
 			TokenType:    "bearer",
-			ExpireIN:     -1,
+			ExpiresIN:    -1,
 			RefreshToken: "refresh",
 		}
 		err = s.store.CreateOauth(o)
@@ -183,12 +183,13 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			fmt.Printf("erreur à la recupération des param (err=%v)", err)
 		}
 		jsonStr := constJSONToken(c, st, p)
-		log.Printf("jsonStr %v", jsonStr)
+		//log.Printf("jsonStr %v", jsonStr)
 		apiURL := "https://api." + p.Domaine + "/auth/v1/oauth2.0/accessToken"
 		data := url.Values{}
 		log.Printf("data %v", data)
 		data.Set("client_id", jsonStr.ClientID)
 		data.Set("client_secret", jsonStr.ClientSecret)
+		//"YNVZF88dD4vny59k")
 		data.Set("grant_type", jsonStr.GrantType)
 		data.Set("redirect_uri", jsonStr.RedirectURI)
 		data.Set("code", jsonStr.Code)
@@ -198,6 +199,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 		if err != nil {
 			log.Printf("erreur sur le post (err=%v)", err)
 		}
+
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 		req.Header.Add("Accept", "application/json")
@@ -224,13 +226,12 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			s.response(rw, r, nil, http.StatusBadGateway)
 			return
 		}
-
 		// Insert en base de données
 		o := &model.Oauth{
 			ID:           0,
 			AccessToken:  t["access_token"].(string),
-			TokenType:    t["type_token"].(string),
-			ExpireIN:     t["expire_in"].(int),
+			TokenType:    t["token_type"].(string),
+			ExpiresIN:    t["expires_in"].(float64),
 			RefreshToken: t["refresh_token"].(string),
 		}
 		err = s.store.CreateOauth(o)
@@ -305,7 +306,7 @@ func constJSONToken(code, state string, param *model.Param) JSONToken {
 		ClientID:     param.ClientID,
 		ClientSecret: param.ClientSecret,
 		GrantType:    param.GrantType,
-		RedirectURI:  "http://localhost:8080/oauth/redirect%3Fstate=" + state,
+		RedirectURI:  "http://localhost:8080/oauth/redirect?state=" + state,
 		Code:         code,
 	}
 }

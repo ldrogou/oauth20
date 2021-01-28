@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS oauth
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	access_token TEXT,
 	token_type TEXT,
-	expire_in INTEGER,
+	expires_in INTEGER,
 	refresh_token TEXT
 )
 `
@@ -77,8 +77,8 @@ func (store *DbStore) GetOauth(id int64) (*model.Oauth, error) {
 }
 
 func (store *DbStore) CreateOauth(o *model.Oauth) error {
-	res, err := store.db.Exec("INSERT INTO oauth (access_token, token_type, expire_in, refresh_token) VALUES (?, ?, ?, ?)",
-		o.AccessToken, o.TokenType, o.ExpireIN, o.RefreshToken)
+	res, err := store.db.Exec("INSERT INTO oauth (access_token, token_type, expires_in, refresh_token) VALUES (?, ?, ?, ?)",
+		o.AccessToken, o.TokenType, o.ExpiresIN, o.RefreshToken)
 
 	if err != nil {
 		return err
