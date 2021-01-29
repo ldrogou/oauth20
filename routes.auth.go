@@ -306,7 +306,7 @@ func constJSONToken(code, state string, param *model.Param) JSONToken {
 		ClientID:     param.ClientID,
 		ClientSecret: param.ClientSecret,
 		GrantType:    param.GrantType,
-		RedirectURI:  "http://localhost:8080/oauth/redirect?state=" + state,
+		RedirectURI:  "http://localhost:8080/oauth/redirect%3Fstate=" + state,
 		Code:         code,
 	}
 }
