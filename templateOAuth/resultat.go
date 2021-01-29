@@ -15,7 +15,11 @@ var Resultat = `<!DOCTYPE html>
 
     <script src="http://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha512.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
-
+    <script>
+        function copy(jwt) {
+            navigator.clipboard.writeText(jwt)
+        }
+    </script>
 </head>
 
 <body>
@@ -23,6 +27,12 @@ var Resultat = `<!DOCTYPE html>
         <h1 class="center-align">Composition</h1>
     </div>
     <div class="container">
+        <a class="waves-effect waves-light btn" onclick="copy('{{.JwtProduce }}');" >
+                <i class="material-icons center">content_copy</i>
+        </a>
+        <a class="waves-effect waves-light btn" onclick="copy('{{.JwtProduce }}');" >
+                <i class="material-icons left bottom">refresh</i>Refresh Token
+        </a>
         <div class="row">
             <div class="light-blue lighten-5 col s5">
                 <span style="width:300px; word-wrap:break-word; display:inline-block;">

@@ -209,11 +209,14 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			log.Printf("client erreur %v", err)
 		}
 
-		log.Printf("resp status %v", resp.StatusCode)
+		if resp.StatusCode != 200 {
+			log.Printf("Problème dans la requete retour http %v", resp.StatusCode)
+			s.response(rw, r, nil, http.StatusBadGateway)
+			return
+		}
 		var t map[string]interface{}
 		// here's the trick
-		json.NewDecoder(resp.Body).Decode(&t)
-
+		err = json.NewDecoder(resp.Body).Decode(&t)
 		if err != nil {
 			log.Printf("Cannot parse token body err=%v", err)
 			s.response(rw, r, nil, http.StatusBadGateway)
@@ -221,11 +224,6 @@ func (s *server) handleRedirect() http.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
-		if err != nil {
-			log.Printf("Cannot parse token body err=%v", err)
-			s.response(rw, r, nil, http.StatusBadGateway)
-			return
-		}
 		// Insert en base de données
 		o := &model.Oauth{
 			ID:           0,
@@ -266,10 +264,6 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 			log.Printf("erreur a la récupération oauth (err=%v)", err)
 		}
 		tokenVal := oauth.AccessToken
-
-		fmt.Println("============")
-		fmt.Println(tokenVal)
-		fmt.Println("============")
 
 		tableau := strings.Split(tokenVal, ".")
 		header, err := jwt.DecodeSegment(tableau[0])

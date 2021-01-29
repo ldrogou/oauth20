@@ -67,12 +67,10 @@ func (store *DbStore) Close() error {
 
 func (store *DbStore) GetOauth(id int64) (*model.Oauth, error) {
 	var oauth = &model.Oauth{}
-	log.Println("ME VOICI")
 	err := store.db.Get(oauth, "SELECT * FROM oauth where id=$1", id)
 	if err != nil {
 		return oauth, err
 	}
-	log.Printf("oauth=%v", oauth)
 	return oauth, nil
 }
 
