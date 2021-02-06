@@ -16,8 +16,19 @@ var Resultat = `<!DOCTYPE html>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha512.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
     <script>
-        function copy(jwt) {
+        function copy(jwt){
             navigator.clipboard.writeText(jwt)
+        }
+
+        function test(){
+            var xhr = new XMLHttpRequest(); 
+            xhr.open('GET', 'http://localhost:8080/oauth/refresh/1');
+            xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                alert(xhr.responseText);
+            }
+            };
+            xhr.send();
         }
     </script>
 </head>
@@ -30,7 +41,7 @@ var Resultat = `<!DOCTYPE html>
         <a class="waves-effect waves-light btn tooltipped" data-tooltip="Copy" onclick="copy('{{.JwtProduce }}');" >
                 <i class="material-icons center">content_copy</i>
         </a>
-        <a class="waves-effect waves-light btn tooltipped" data-tooltip="Refresh" onclick="copy('{{.JwtProduce }}');" >
+        <a class="waves-effect waves-light btn tooltipped" data-tooltip="Refresh" onclick="refresh('{{.JwtProduce }}');" >
                 <i class="material-icons left bottom">refresh</i>Refresh Token
         </a>
         <div class="row">

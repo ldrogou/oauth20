@@ -97,6 +97,7 @@ func (s *server) handleLocal() http.HandlerFunc {
 		secretBase64, err := jwt.DecodeSegment(jwtKey)
 		// Declare the token with the algorithm used for signing, and the claims
 		ts := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+
 		at, err := ts.SignedString(secretBase64)
 		// Create the JWT string
 		if err != nil {
@@ -249,11 +250,16 @@ func (s *server) handleRedirect() http.HandlerFunc {
 	}
 }
 
+func (s *server) handleRefreshToken() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+	}
+}
+
 func (s *server) handleJSONWebToken() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		c := r.URL.Query().Get("model")
-
+		//c, _ := mux.Vars(r)["model"]
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
 
