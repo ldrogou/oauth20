@@ -40,6 +40,7 @@ type Claims struct {
 	Sub          string   `json:"sub"`
 	IDEntreprise string   `json:"idEntreprise"`
 	RcaPartnerID string   `json:"rcaPartnerId"`
+	Scopes       []string `json:"scopes"`
 	Roles        []string `json:"roles"`
 	jwt.StandardClaims
 }
@@ -68,32 +69,36 @@ func (s *server) handleLocal() http.HandlerFunc {
 		sub := r.FormValue("sub")
 		idEntreprise := r.FormValue("id_entreprise")
 		rcaPartnerID := r.FormValue("rcaPartnerId")
-		var jwtKey = []byte(r.FormValue("secret"))
+		jwtKey := r.FormValue("secret")
+		scopes := r.FormValue("scopes")
+		roles := r.FormValue("roles")
+
+		var sc []string
+		sc = append(sc, scopes)
+
+		rs := strings.Fields(roles)
 
 		// Declare the expiration time of the token
 		// here, we have kept it as 5 minutes
 		expirationTime := time.Now().Add(5 * time.Hour)
-		roles := []string{"RCA_CLOUD_EXPERT_COMPTABLE",
-			"E_COLLECTE_BO_CREA",
-			"E_CREATION_CREA",
-			"E_QUESTIONNAIRE_CREA"}
 		// Create the JWT claims, which includes the username and expiry time
 		claims := &Claims{
 			Sub:          sub,
 			IDEntreprise: idEntreprise,
 			RcaPartnerID: rcaPartnerID,
-			Roles:        roles,
+			Roles:        rs,
+			Scopes:       sc,
 			StandardClaims: jwt.StandardClaims{
 				// In JWT, the expiry time is expressed as unix milliseconds
 				ExpiresAt: expirationTime.Unix(),
 			},
 		}
 
+		secretBase64, err := jwt.DecodeSegment(jwtKey)
 		// Declare the token with the algorithm used for signing, and the claims
-		ts := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
+		ts := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+		at, err := ts.SignedString(secretBase64)
 		// Create the JWT string
-		at, err := ts.SignedString(jwtKey)
 		if err != nil {
 			log.Printf("erreur %v", err)
 			// If there is an error in creating the JWT return an internal server error
@@ -116,7 +121,7 @@ func (s *server) handleLocal() http.HandlerFunc {
 
 		monID := strconv.Itoa(int(o.ID))
 		// Puis redisrect vers page resultat
-		rj := "http://localhost:8080/jwt?model=" + monID
+		rj := "http://localhost:8090/jwt?model=" + monID
 		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 
 	}
@@ -163,8 +168,8 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 		rhttp := "https://" + d + "/entreprise-partenaire/authorize?client_id=" + ci +
 			"&scope=" + sc +
 			"&current_company=" + cc +
-			"&redirect_uri=http://localhost:8080/oauth/redirect%3Fstate=" + st +
-			"&abort_uri=http://localhost:8080/index"
+			"&redirect_uri=http://localhost:8090/oauth/redirect%3Fstate=" + st +
+			"&abort_uri=http://localhost:8090/index"
 		http.Redirect(rw, r, rhttp, http.StatusMovedPermanently)
 
 	}
@@ -239,7 +244,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 
 		monID := strconv.Itoa(int(o.ID))
 		// Puis redisrect vers page resultat
-		rj := "http://localhost:8080/jwt?model=" + monID
+		rj := "http://localhost:8090/jwt?model=" + monID
 		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 	}
 }
@@ -300,7 +305,7 @@ func constJSONToken(code, state string, param *model.Param) JSONToken {
 		ClientID:     param.ClientID,
 		ClientSecret: param.ClientSecret,
 		GrantType:    param.GrantType,
-		RedirectURI:  "http://localhost:8080/oauth/redirect%3Fstate=" + state,
+		RedirectURI:  "http://localhost:8090/oauth/redirect%3Fstate=" + state,
 		Code:         code,
 	}
 }

@@ -27,10 +27,10 @@ var Resultat = `<!DOCTYPE html>
         <h1 class="center-align">Composition</h1>
     </div>
     <div class="container">
-        <a class="waves-effect waves-light btn" onclick="copy('{{.JwtProduce }}');" >
+        <a class="waves-effect waves-light btn tooltipped" data-tooltip="Copy" onclick="copy('{{.JwtProduce }}');" >
                 <i class="material-icons center">content_copy</i>
         </a>
-        <a class="waves-effect waves-light btn" onclick="copy('{{.JwtProduce }}');" >
+        <a class="waves-effect waves-light btn tooltipped" data-tooltip="Refresh" onclick="copy('{{.JwtProduce }}');" >
                 <i class="material-icons left bottom">refresh</i>Refresh Token
         </a>
         <div class="row">
@@ -73,7 +73,11 @@ var Resultat = `<!DOCTYPE html>
     document.addEventListener('DOMContentLoaded', function () {
         var elems = document.querySelectorAll('.collapsible');
         var instances = M.Collapsible.init(elems, {});
+
+        var elemsTt = document.querySelectorAll('.tooltipped');
+        var instancesTt = M.Tooltip.init(elemsTt, {});
     });
+
 </script>
 
 </html>`
