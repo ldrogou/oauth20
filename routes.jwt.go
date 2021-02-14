@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
 	"github.com/ldrogou/goauth20/model"
 	templateoauth "github.com/ldrogou/goauth20/templateOAuth"
 )
@@ -24,7 +25,6 @@ type JSONToken struct {
 	RedirectURI  string `json:"redirect_uri"`
 	Code         string `json:"code"`
 }
-
 
 func (s *server) handleRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
@@ -94,7 +94,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 
 		monID := strconv.Itoa(int(o.ID))
 		// Puis redisrect vers page resultat
-		rj := "http://localhost:8090/jwt?model=" + monID
+		rj := "http://localhost:8090/jwt/" + monID
 		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 	}
 }
@@ -102,7 +102,11 @@ func (s *server) handleRedirect() http.HandlerFunc {
 func (s *server) handleJSONWebToken() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		c := r.URL.Query().Get("model")
+		vars, _ := mux.Vars(r)["id"]
+		jwtID, err := strconv.ParseInt(vars, 10, 64)
+		if err != nil {
+			log.Printf("erreur a la récupération id jwt (err=%v)", err)
+		}
 
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
@@ -112,9 +116,7 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
-		oauthID, err := strconv.ParseInt(c, 10, 64)
-
-		oauth, err := s.store.GetOauth(oauthID)
+		oauth, err := s.store.GetOauth(jwtID)
 		if err != nil {
 			log.Printf("erreur a la récupération oauth (err=%v)", err)
 		}
@@ -137,6 +139,7 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 		}
 
 		f := File{
+			JwtID:      jwtID,
 			JwtProduce: tokenVal,
 			Header:     string(header),
 			Payload:    string(payload),

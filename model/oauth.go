@@ -8,6 +8,7 @@ type Oauth struct {
 	TokenType    string  `db:"token_type"`
 	ExpiresIN    float64 `db:"expires_in"`
 	RefreshToken string  `db:"refresh_token"`
+	Param        Param   `db:"param_id"`
 }
 
 func (o Oauth) String() string {

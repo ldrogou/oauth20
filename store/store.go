@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS oauth
 	access_token TEXT,
 	token_type TEXT,
 	expires_in INTEGER,
-	refresh_token TEXT
+	refresh_token TEXT,
+	param_id INTEGER,
+	FOREIGN KEY(param_id) REFERENCES param(id)
 )
 `
 

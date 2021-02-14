@@ -16,6 +16,7 @@ type server struct {
 
 //File structure du fichier
 type File struct {
+	JwtID      int64
 	JwtProduce string
 	Header     string
 	Payload    string

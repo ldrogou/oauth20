@@ -20,9 +20,9 @@ var Resultat = `<!DOCTYPE html>
             navigator.clipboard.writeText(jwt)
         }
 
-        function test(){
+        function test(jwtID){
             var xhr = new XMLHttpRequest(); 
-            xhr.open('GET', 'http://localhost:8080/oauth/refresh/1');
+            xhr.open('GET', 'http://localhost:8080/jwt/refresh/' + jwtID);
             xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 alert(xhr.responseText);
@@ -41,7 +41,7 @@ var Resultat = `<!DOCTYPE html>
         <a class="waves-effect waves-light btn tooltipped" data-tooltip="Copy" onclick="copy('{{.JwtProduce }}');" >
                 <i class="material-icons center">content_copy</i>
         </a>
-        <a class="waves-effect waves-light btn tooltipped" data-tooltip="Refresh" onclick="refresh('{{.JwtProduce }}');" >
+        <a class="waves-effect waves-light btn tooltipped" data-tooltip="Refresh" onclick="refresh('{{.JwtID }}');" >
                 <i class="material-icons left bottom">refresh</i>Refresh Token
         </a>
         <div class="row">

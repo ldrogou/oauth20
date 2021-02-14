@@ -102,7 +102,7 @@ func (s *server) handleLocal() http.HandlerFunc {
 
 		monID := strconv.Itoa(int(o.ID))
 		// Puis redisrect vers page resultat
-		rj := "http://localhost:8090/jwt?model=" + monID
+		rj := "http://localhost:8090/jwt/" + monID
 		http.Redirect(rw, r, rj, http.StatusMovedPermanently)
 
 	}
