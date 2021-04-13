@@ -1,6 +1,7 @@
-package main
+package routeserv
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -18,14 +19,14 @@ import (
 //Claim claims to export
 type Claims struct {
 	Sub          string   `json:"sub"`
-	IDEntreprise string   `json:"idEntreprise"`
+	IDEntreprise string   `json:"idEntreprise,omitempty"`
 	RcaPartnerID string   `json:"rcaPartnerId"`
 	Scopes       []string `json:"scopes"`
 	Roles        []string `json:"roles"`
 	jwt.StandardClaims
 }
 
-func (s *server) handleIndex() http.HandlerFunc {
+func (s *Server) handleIndex() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		rw.Header().Set("Content-Type", "text/html")
@@ -43,7 +44,7 @@ func (s *server) handleIndex() http.HandlerFunc {
 	}
 
 }
-func (s *server) handleLocal() http.HandlerFunc {
+func (s *Server) handleLocal() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		sub := r.FormValue("sub")
@@ -63,16 +64,18 @@ func (s *server) handleLocal() http.HandlerFunc {
 		expirationTime := time.Now().Add(5 * time.Hour)
 		// Create the JWT claims, which includes the username and expiry time
 		claims := &Claims{
-			Sub:          sub,
-			IDEntreprise: idEntreprise,
-			RcaPartnerID: rcaPartnerID,
-			Roles:        rs,
-			Scopes:       sc,
 			StandardClaims: jwt.StandardClaims{
 				// In JWT, the expiry time is expressed as unix milliseconds
 				ExpiresAt: expirationTime.Unix(),
 			},
 		}
+		if idEntreprise != "0" {
+			claims.IDEntreprise = idEntreprise
+		}
+		claims.Sub = sub
+		claims.RcaPartnerID = rcaPartnerID
+		claims.Roles = rs
+		claims.Scopes = sc
 
 		secretBase64, err := jwt.DecodeSegment(jwtKey)
 		// Declare the token with the algorithm used for signing, and the claims
@@ -95,7 +98,7 @@ func (s *server) handleLocal() http.HandlerFunc {
 			ExpiresIN:    -1,
 			RefreshToken: "refresh",
 		}
-		err = s.store.CreateOauth(o)
+		err = s.Store.CreateOauth(o)
 		if err != nil {
 			fmt.Printf("erreur suivante %v", err)
 		}
@@ -109,19 +112,14 @@ func (s *server) handleLocal() http.HandlerFunc {
 
 }
 
-func (s *server) handleOAuth20() http.HandlerFunc {
+func (s *Server) handleOAuth20() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		d := r.FormValue("domain")
 		ci := r.FormValue("clientId")
 		cs := r.FormValue("clientSecret")
-		sc := r.FormValue("scopes")
+		sc := r.FormValue("clientScopes")
 		cc := r.FormValue("currentCompany")
-		if len(cc) == 0 {
-			cc = "false"
-		} else {
-			cc = "true"
-		}
 
 		// Création du nombre aléatoire pour la state
 		nr := rand.NewSource(time.Now().UnixNano())
@@ -138,7 +136,7 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 			GrantType:    "authorization_code",
 		}
 
-		err := s.store.CreateParam(p)
+		err := s.Store.CreateParam(p)
 		if err != nil {
 			fmt.Printf("erreur suivante %v", err)
 		}
@@ -146,13 +144,28 @@ func (s *server) handleOAuth20() http.HandlerFunc {
 		// on appelle les méthodes de l'instance de `rand.Rand` obtenue comme les autres méthodes du package.
 		//fmt.Print(r1.Intn(100), ",")
 
-		rhttp := "https://" + d + "/entreprise-partenaire/authorize?client_id=" + ci +
-			"&scope=" + sc +
-			"&current_company=" + cc +
-			"&redirect_uri=http://localhost:8090/oauth/redirect%3Fstate=" + st +
-			"&abort_uri=http://localhost:8090/index"
-		http.Redirect(rw, r, rhttp, http.StatusMovedPermanently)
+		var b bytes.Buffer
+		if cc == "none" {
+			b.WriteString("https://api.")
+			b.WriteString(d)
+			b.WriteString("/auth/v1/oauth2.0/authorize?response_type=code")
+		} else {
+			b.WriteString("https://")
+			b.WriteString(d)
+			b.WriteString("/entreprise-partenaire/authorize?")
+			b.WriteString("current_company=")
+			b.WriteString(cc)
+			b.WriteString("&abort_uri=http://localhost:8090/index")
+		}
 
+		b.WriteString("&client_id=")
+		b.WriteString(ci)
+		b.WriteString("&scope=")
+		b.WriteString(sc)
+		b.WriteString("&redirect_uri=http://localhost:8090/oauth/redirect%3Fstate=")
+		b.WriteString(st)
+
+		http.Redirect(rw, r, b.String(), http.StatusMovedPermanently)
 	}
 
 }

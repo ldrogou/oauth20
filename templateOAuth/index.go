@@ -26,9 +26,13 @@ var TemplateIndex = `<!DOCTYPE html>
 </head>
 
 <body>
-    <div>
-        <h1 class="center-align">JWT</h1>
-      </div>
+    <div class="container">
+        <div class="row">
+            <div>
+                <h1 class="center-align">JWT</h1>
+            </div>
+        </div>
+    </div>
     <div class="container">
         <div class="row">
             <form class="col s6 light-blue lighten-5" id="formLocal" method="post" action="/local">
@@ -37,27 +41,6 @@ var TemplateIndex = `<!DOCTYPE html>
                         <i class="material-icons prefix">account_circle</i>
                         <input type="text" id="sub" name="sub" value="localhost+ec@rca.fr">
                         <label for="name">Subject :</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <i class="material-icons prefix">account_balance</i>
-                        <input type="text" id="id_entreprise" name="id_entreprise" value="1">
-                        <label for="name">Id entreprise :</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <i class="material-icons prefix">fiber_pin</i>
-                        <input type="text" id="scopes" name="scopes" value="purchase">
-                        <label for="name">Scopes :</label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <i class="material-icons prefix">fiber_pin</i>
-                        <input type="text" id="roles" name="roles" value="RCA_CLOUD_EXPERT_COMPTABLE E_COLLECTE_BO_CREA E_CREATION_CREA E_QUESTIONNAIRE_CREA">
-                        <label for="name">Roles :</label>
                     </div>
                 </div>
                 <div class="row">
@@ -72,6 +55,27 @@ var TemplateIndex = `<!DOCTYPE html>
                         <i class="material-icons prefix">fiber_pin</i>
                         <input type="text" id="secret" name="secret" value="XXXXXXX">
                         <label for="name">Secret :</label>
+                    </div>
+                </div>      
+                <div class="row">
+                    <div class="input-field col s12">
+                        <i class="material-icons prefix">fiber_pin</i>
+                        <input type="text" id="scopes" name="scopes" value="purchase">
+                        <label for="name">Scopes :</label>
+                    </div>
+                </div>                          
+                <div class="row">
+                    <div class="input-field col s12">
+                        <i class="material-icons prefix">account_balance</i>
+                        <input type="text" id="id_entreprise" name="id_entreprise" value="1">
+                        <label for="name">Id entreprise : (0 absent du token)</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <i class="material-icons prefix">fiber_pin</i>
+                        <input type="text" id="roles" name="roles" value="RCA_CLOUD_EXPERT_COMPTABLE E_COLLECTE_BO_CREA E_CREATION_CREA E_QUESTIONNAIRE_CREA">
+                        <label for="name">Roles :</label>
                     </div>
                 </div>
                 <div class="row">
@@ -97,29 +101,31 @@ var TemplateIndex = `<!DOCTYPE html>
                 </div>
                 <div class="row">
                     <div class="input-field col s12">
-                        <i class="material-icons prefix">account_balance</i>
+                        <i class="material-icons prefix">fiber_pin</i>
                         <input type="text" id="clientSecret" name="clientSecret" value="xxxxxxxx">
                         <label for="name">Client Secret :</label>
                     </div>
                 </div>
                 <div class="row">
                     <div class="input-field col s12">
-                        <i class="material-icons prefix">account_balance</i>
-                        <input type="text" id="scopes" name="scopes" value="user">
-                        <label for="name">Scopes</label>
+                        <i class="material-icons prefix">fiber_pin</i>
+                        <input type="text" id="clientScopes" name="clientScopes" value="user">
+                        <label for="name">clientScopes</label>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="checkbox col s12">
-                        <label>
-                            <input type="checkbox" id="currentCompany" name="currentCompany" checked="checked" />
-                            <span>Company courante</span>
-                        </label>
+                    <div class="input-field center-align col s12">
+                        <select id="currentCompany" name="currentCompany">
+                        <option value="true" selected>entreprise partenaire</option>
+                        <option value="false" >Sans entreprise</option>
+                        <option value="none" >CAS</option>
+                        </select>
+                        <label>Entreprise</label>
                     </div>
                 </div>
                 <div class="row">
-                    <a class="waves-effect waves-light btn" onclick="generateToken('formOAtuh20');"><i
-                            class="material-icons left">cloud</i>OAuth2.0</a>
+                    <a class="waves-effect waves-light btn" onclick="generateToken('formOAtuh20');">
+                            <i class="material-icons left">cloud</i>OAuth2.0</a>
                 </div>
             </form>
         </div>
@@ -128,4 +134,12 @@ var TemplateIndex = `<!DOCTYPE html>
 
 </body>
 
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('select');
+        var instances = M.FormSelect.init(elems, {});
+    });
+
+</script>
 </html>`

@@ -1,4 +1,4 @@
-package main
+package routeserv
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (s *server) handleRefreshToken() http.HandlerFunc {
+func (s *Server) handleRefreshToken() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		vars, _ := mux.Vars(r)["id"]

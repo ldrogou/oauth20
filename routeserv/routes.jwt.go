@@ -1,4 +1,4 @@
-package main
+package routeserv
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	templateoauth "github.com/ldrogou/goauth20/templateOAuth"
 )
 
+//"YNVZF88dD4vny59k")
 //JSONToken json token
 type JSONToken struct {
 	ClientID     string `json:"client_id"`
@@ -26,14 +27,14 @@ type JSONToken struct {
 	Code         string `json:"code"`
 }
 
-func (s *server) handleRedirect() http.HandlerFunc {
+func (s *Server) handleRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		c := r.URL.Query().Get("code")
 		st := r.URL.Query().Get("state")
 
 		// ici jouter la récupération du param
-		p, err := s.store.GetParam(st)
+		p, err := s.Store.GetParam(st)
 		if err != nil {
 			fmt.Printf("erreur à la recupération des param (err=%v)", err)
 		}
@@ -44,7 +45,6 @@ func (s *server) handleRedirect() http.HandlerFunc {
 		log.Printf("data %v", data)
 		data.Set("client_id", jsonStr.ClientID)
 		data.Set("client_secret", jsonStr.ClientSecret)
-		//"YNVZF88dD4vny59k")
 		data.Set("grant_type", jsonStr.GrantType)
 		data.Set("redirect_uri", jsonStr.RedirectURI)
 		data.Set("code", jsonStr.Code)
@@ -87,7 +87,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 			ExpiresIN:    t["expires_in"].(float64),
 			RefreshToken: t["refresh_token"].(string),
 		}
-		err = s.store.CreateOauth(o)
+		err = s.Store.CreateOauth(o)
 		if err != nil {
 			fmt.Printf("erreur suivante %v", err)
 		}
@@ -99,7 +99,7 @@ func (s *server) handleRedirect() http.HandlerFunc {
 	}
 }
 
-func (s *server) handleJSONWebToken() http.HandlerFunc {
+func (s *Server) handleJSONWebToken() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		vars, _ := mux.Vars(r)["id"]
@@ -116,7 +116,7 @@ func (s *server) handleJSONWebToken() http.HandlerFunc {
 			fmt.Printf("erreur suivante %v", err)
 		}
 
-		oauth, err := s.store.GetOauth(jwtID)
+		oauth, err := s.Store.GetOauth(jwtID)
 		if err != nil {
 			log.Printf("erreur a la récupération oauth (err=%v)", err)
 		}

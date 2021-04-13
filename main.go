@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/ldrogou/goauth20/routeserv"
 	"github.com/ldrogou/goauth20/store"
 )
 
@@ -19,16 +20,16 @@ func main() {
 }
 
 func run() error {
-	srv := newServer()
-	srv.store = &store.DbStore{}
+	srv := routeserv.NewServer()
+	srv.Store = &store.DbStore{}
 
-	err := srv.store.Open()
+	err := srv.Store.Open()
 	if err != nil {
 		return err
 	}
-	defer srv.store.Close()
+	defer srv.Store.Close()
 
-	http.HandleFunc("/", srv.serveHTTP)
+	http.HandleFunc("/", srv.ServeHTTP)
 
 	port := 8090
 	log.Printf("servering http port %v", port)
